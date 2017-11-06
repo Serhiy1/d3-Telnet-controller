@@ -1,28 +1,35 @@
 127.0.0.1
 54321
+4
 
 t 1
-track 4
 track 3
-track 1
-null 
----
-t2
 track 4
-null 
-null 
-null 
----
-t3
-track 4
-track 3
-null 
-null 
----
-t 4
-track 4
-track 3
 track 1
 track 2
+---
+t 2
+track 3
+track 4
+track 1
+null
+---
+t 3
+track 3
+track 4
+null
+null
+---
+t 4
+track 3
+track 4
+track 1
+null
+---
+fake t
+track 3
+track 4
+null
+null
 ---
 EOF

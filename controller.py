@@ -1,5 +1,6 @@
 import telnetlib
 import json
+import os
 
 d3 = telnetlib.Telnet()
 
@@ -11,12 +12,14 @@ port = 0
 transport_list = []
 track_list = []
 dictionary = {}
+max_length = 0
 
 
 def send_data():
 
     global dictionary
     global request_number
+    global status
 
     quit_loop = False
     key_list = list(dictionary.keys())
@@ -35,35 +38,46 @@ def send_data():
         user_input = input('User input: ')
         user_input = user_input.split(',')
 
-        command = user_input[0]
-        transport = int(user_input[1]) - 1
-        track = int(user_input[2]) - 1
+        if len(user_input) < 3:
+            print('invalid input')
+        else:
 
-        if command == 'p':
-            command = 'play'
+            command = user_input[0]
+            transport = int(user_input[1]) - 1
+            track = int(user_input[2]) - 1
 
-        elif command == 'ps':
-            command = 'playSection'
+            if command == 'p':
+                command = 'play'
 
-        elif command == 's':
-            command = 'stop'
+            elif command == 'ps':
+                command = 'playSection'
 
-        transport = key_list[transport]
-        track = dictionary[transport][track]
+            elif command == 's':
+                command = 'stop'
 
-        string = '{"request":%s,"track_command":{"command":"%s","track":"%s","location":"00:00:00:00","player":"%s","transition":"0"}}\n' % (request_number, command,  track,  transport)
-        print(string)
-        string = string.encode('ascii')
-        d3.write(string)
-        data = d3.read_until(newline, 1)
+            transport = key_list[transport]
+            track = dictionary[transport][track]
 
-        print(data)
-        request_number += 1
+            string = '{"request":%s,"track_command":{"command":"%s","track":"%s","location":"00:00:00:00","player":"%s","transition":"0"}}\n' % (request_number, command,  track,  transport)
+            # print(string)
+            string = string.encode('ascii')
+            d3.write(string)
+            status = d3.read_until(newline, 1)
+            status = status.decode('ascii')
+            status = json.loads(status)
+
+            print(status['status'])
+            input('command sent, press enter to continue....')
+
+            cls()
+
+            request_number += 1
 
 
 def print_matrix():
 
     global dictionary
+    global max_length
 
     key_list = list(dictionary.keys())
 
@@ -80,9 +94,10 @@ def print_matrix():
     print('')
     print(('-' * 28 + ' || ') * len(key_list))
 
-    for i in range(len(temp_list)):
+    for i in range(max_length):
         for u in range(len(temp_list)):
-            if temp_list[u][i] == 'null ':
+            snoop = temp_list[u][i]
+            if temp_list[u][i] == 'null':
                 print(' ' * 28 + ' || ', end='')
             else:
                 padding = len(temp_list[u][i])
@@ -91,6 +106,9 @@ def print_matrix():
                 print(str(i + 1) + ". " + temp_list[u][i] + padding + ' || ', end='')
         print('')
 
+
+def cls():
+    os.system('cls' if os.name=='nt' else 'clear')
 
 def make_new_config():
     global host
@@ -157,7 +175,9 @@ def parse_data():
 
     print(status)
     print(request_number)
-    print(results)
+    for track in results:
+        print(track[0], end=', ')
+    print()
 
 
 def get_transports():
@@ -204,8 +224,8 @@ def save_data():
     global host
     global port
     global dictionary
+    global max_length
 
-    max_length = 0
 
     file = open('data.txt', 'w')
 
@@ -216,6 +236,7 @@ def save_data():
         list = dictionary[key]
         if len(dictionary[key]) > max_length:
             max_length = len(dictionary[key])
+    file.write(str(max_length) + '\n')
 
     for key in dictionary.keys():
         file.write(key + '\n')
@@ -227,7 +248,7 @@ def save_data():
         if len(temp) < max_length:
             number = max_length - len(temp)
             for u in range(number):
-                file.write('null \n')
+                file.write('null\n')
         file.write('---'+'\n')
 
     file.write('EOF')
@@ -240,6 +261,7 @@ def load_data():
     global host
     global port
     global dictionary
+    global max_length
 
     escaped = False
     eof = False
@@ -251,6 +273,10 @@ def load_data():
     port = file.readline()
     port = port[:-1]
     port = int(port)
+    max_length = file.readline()
+    max_length = max_length[:-1]
+    max_length = int(max_length)
+
     file.readline()
 
     temp_list = file.readlines()
@@ -300,4 +326,7 @@ def main():
 
     send_data()
 
+
 main()
+
+  # print("something went wrong, probably a bad input")
