@@ -13,7 +13,7 @@ transport_list = []
 track_list = []
 dictionary = {}
 max_length = 0
-quit = False
+main_quit = False
 
 
 def send_data():
@@ -130,6 +130,7 @@ def make_new_config():
     get_transports()
     user_selection()
     save_data()
+    load_data()
 
 
 def connect_to_server():
@@ -232,7 +233,7 @@ def save_data():
     file = open('data.txt', 'w')
 
     file.write(host + '\n')
-    file.write(str(port) + '\n' + '\n')
+    file.write(str(port) + '\n')
 
     for key in dictionary.keys():
         list = dictionary[key]
@@ -265,6 +266,11 @@ def load_data():
     global dictionary
     global max_length
 
+    host = ''
+    port = []
+    dictionary = {}
+    max_length = 0
+
     escaped = False
     eof = False
     i = 0
@@ -284,14 +290,17 @@ def load_data():
     temp_list = file.readlines()
     list_of_tracks = []
 
+    i = 4
+
     while not eof:
         escaped = False
         if temp_list[i] == 'EOF':
             eof = True
+            i += 1
         else:
             key = temp_list[i]
             key = key[:-1]
-            i += 1
+
             while not escaped:
                 if temp_list[i] == '---\n':
                     escaped = True
@@ -301,6 +310,7 @@ def load_data():
                     blah = blah[:-1]
                     list_of_tracks.append(blah)
                     i += 1
+
         for v in range(len(list_of_tracks)):
             dictionary.setdefault(key, []).append(list_of_tracks[v])
         list_of_tracks = []
@@ -329,9 +339,9 @@ def main():
     send_data()
 
 
-while not quit:
-    try:
-        main()
-    except:
-        print("something went wrong")
+while not main_quit:
+   # try:
+    main()
+   # except:
+     #   print("something went wrong")
 
