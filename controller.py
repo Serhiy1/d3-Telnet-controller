@@ -13,6 +13,7 @@ transport_list = []
 track_list = []
 dictionary = {}
 max_length = 0
+quit = False
 
 
 def send_data():
@@ -108,7 +109,8 @@ def print_matrix():
 
 
 def cls():
-    os.system('cls' if os.name=='nt' else 'clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
+
 
 def make_new_config():
     global host
@@ -327,6 +329,9 @@ def main():
     send_data()
 
 
-main()
+while not quit:
+    try:
+        main()
+    except:
+        print("something went wrong")
 
-  # print("something went wrong, probably a bad input")
