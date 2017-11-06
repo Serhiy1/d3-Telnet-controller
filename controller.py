@@ -242,17 +242,24 @@ def save_data():
     file.write(str(max_length) + '\n')
 
     for key in dictionary.keys():
-        file.write(key + '\n')
+        file.write(key + ',')
         temp = dictionary[key]
 
         for i in range(len(temp)):
-            file.write(temp[i] + '\n')
+            if i == len(temp)-1:
+                file.write(temp[i])
+            else:
+                file.write(temp[i] + ',')
 
         if len(temp) < max_length:
+            file.write(',')
             number = max_length - len(temp)
             for u in range(number):
-                file.write('null\n')
-        file.write('---'+'\n')
+                if u == number-1:
+                    file.write('null')
+                else:
+                    file.write('null,')
+        file.write('\n')
 
     file.write('EOF')
     file.close()
@@ -270,6 +277,7 @@ def load_data():
     port = []
     dictionary = {}
     max_length = 0
+    list_of_tracks = []
 
     escaped = False
     eof = False
@@ -285,35 +293,20 @@ def load_data():
     max_length = max_length[:-1]
     max_length = int(max_length)
 
-    file.readline()
-
-    temp_list = file.readlines()
-    list_of_tracks = []
-
-    i = 4
-
     while not eof:
-        escaped = False
-        if temp_list[i] == 'EOF':
-            eof = True
-            i += 1
-        else:
-            key = temp_list[i]
-            key = key[:-1]
 
-            while not escaped:
-                if temp_list[i] == '---\n':
-                    escaped = True
-                    i += 1
-                else:
-                    blah = temp_list[i]
-                    blah = blah[:-1]
-                    list_of_tracks.append(blah)
-                    i += 1
+        read_data = file.readline()
+
+        if read_data == 'EOF':
+            eof = True
+        else:
+            read_data = read_data.split(',')
+            key = read_data[0]
+            list_of_tracks = read_data[1:]
+            list_of_tracks[-1] = list_of_tracks[-1][:-1]
 
         for v in range(len(list_of_tracks)):
             dictionary.setdefault(key, []).append(list_of_tracks[v])
-        list_of_tracks = []
 
 
 def main():

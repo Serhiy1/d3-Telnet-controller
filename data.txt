@@ -1,28 +1,9 @@
 127.0.0.1
 54321
 4
-t1
-track 3
-track 4
-track 1
-track 2
----
-t2
-track 3
-track 4
-track 1
-null
----
-t3
-track 3
-null
-null
-null
----
-t4
-track 3
-track 4
-null
-null
----
+transport 1,track 1,track 3,track 2,track 4
+transport 2,track 1,track 3,null,null
+transport 3,track 1,track 3,track 2,null
+transport 4,track 1,track 3,null,null
+transport 5,track 3,track 2,null,null
 EOF
