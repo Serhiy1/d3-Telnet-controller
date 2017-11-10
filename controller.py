@@ -229,7 +229,6 @@ def save_data():
     global dictionary
     global max_length
 
-
     file = open('data.txt', 'w')
 
     file.write(host + '\n')
@@ -333,8 +332,10 @@ def main():
 
 
 while not main_quit:
-   # try:
-    main()
-   # except:
-     #   print("something went wrong")
+    try:
+        main()
+    except Exception as error:
+        print(type(error))
+        print(error.args)
+        print(error)
 
