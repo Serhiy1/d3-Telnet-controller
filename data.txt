@@ -1,9 +1,6 @@
-127.0.0.1
+10.0.27.214
 54321
-4
-transport 1,track 1,track 3,track 2,track 4
-transport 2,track 1,track 3,null,null
-transport 3,track 1,track 3,track 2,null
-transport 4,track 1,track 3,null,null
-transport 5,track 3,track 2,null,null
+3
+default,3,track 1,2
+dsfgn,3,track 1,2
 EOF
