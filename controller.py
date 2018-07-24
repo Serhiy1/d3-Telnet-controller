@@ -1,6 +1,7 @@
 import telnetlib
 import json
 import os
+import re
 
 d3 = telnetlib.Telnet()
 
@@ -28,7 +29,10 @@ def send_data():
     newline = newline.encode('ascii')
 
     print("\n the syntax for sending a command to d3 will be based a letter and numbering system")
-    print('to make this script work you will only need to type in three things: [play mode], [transport], [track]')
+    print('to make this script work you will only need to type in a minimum of three things: ')
+    print('[play mode], [transport], [track]')
+    print('additionally you also have 2 extra variables, time and transition.'
+          ' They are automatically set to 0 if left empty')
     print('there is no need to type out the full names for everything, just the associated numbers')
     print('as a example, if I want transport 1 to play track 3, I will type out "P,1,3" \n ')
 
@@ -38,15 +42,32 @@ def send_data():
 
         user_input = input('User input: ')
         user_input = user_input.split(',')
+        snoop = (len(user_input))
+        print(snoop)
 
         if len(user_input) < 3:
             print('invalid input')
         else:
-
             command = user_input[0]
-            transport = int(user_input[1]) - 1
+            transport = int(user_input[1]) -1
             track = int(user_input[2]) - 1
+            if len(user_input) == 3:
+                location = "00:00:00:00"
+                transition = "0"
 
+            elif len(user_input) == 4:
+                location = user_input[4-1]
+                location = str(location)
+
+                if verify_time_input(location):
+                    transition = "0"
+                else:
+                    print("invalid time code input")
+                    break  # there should be a better way to do this
+            elif len(user_input) == 5:
+                location = user_input[4 - 1]
+                if verify_time_input(location):
+                    transition = user_input[5-1]
             if command == 'p':
                 command = 'play'
 
@@ -58,20 +79,21 @@ def send_data():
 
             transport = key_list[transport]
             track = dictionary[transport][track]
+            string = '{"request":%s,"track_command":{"command":"%s","track":"%s","location":"%s","player":"%s","transition":"%s"}}\n' % (
+                request_number, command,  track, location, transport, transition)
+            log = 'request:%s, %s track: %s at location: %s on transport: %s  using transition %s' % (
+                request_number, command,  track, location, transport, transition)
 
-            string = '{"request":%s,"track_command":{"command":"%s","track":"%s","location":"00:00:00:00","player":"%s","transition":"0"}}\n' % (request_number, command,  track,  transport)
-            # print(string)
             string = string.encode('ascii')
             d3.write(string)
             status = d3.read_until(newline, 1)
             status = status.decode('ascii')
             status = json.loads(status)
 
-            print(status['status'])
-            input('command sent, press enter to continue....')
+            print(log)
+            input(status['status'])
 
             cls()
-
             request_number += 1
 
 
@@ -97,7 +119,7 @@ def print_matrix():
 
     for i in range(max_length):
         for u in range(len(temp_list)):
-            snoop = temp_list[u][i]
+            # snoop = temp_list[u][i]
             if temp_list[u][i] == 'null':
                 print(' ' * 28 + ' || ', end='')
             else:
@@ -106,6 +128,17 @@ def print_matrix():
                 padding = padding * " "
                 print(str(i + 1) + ". " + temp_list[u][i] + padding + ' || ', end='')
         print('')
+
+
+def verify_time_input(time_code_input):
+
+    time_code_regex = re.compile(r'[0-9][0-9]:[0-5][0-9]:[0-5][0-9]:[0-5][0-9]')
+    # snoop = time_code_input
+    match = re.match(time_code_regex, time_code_input)
+    if match:
+        return True
+    else:
+        return False
 
 
 def cls():
@@ -338,4 +371,3 @@ while not main_quit:
         print(type(error))
         print(error.args)
         print(error)
-
