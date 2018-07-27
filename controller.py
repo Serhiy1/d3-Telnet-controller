@@ -17,6 +17,15 @@ max_length = 0
 main_quit = False
 
 
+grouped_block_1 = [re.compile(r'((ps)|p|s)'),re.compile(r'(\d)'),re.compile(r'(\d)'),
+                   re.compile(r'([0-9][0-9]:[0-5][0-9]:[0-5][0-9]:[0-5][0-9])'),re.compile(r'(\d)')]
+grouped_block_2 = [re.compile(r'((ps)|p|s)'),re.compile(r'(\d)'),re.compile(r'(\d)'),re.compile(r'(\d)')]
+grouped_block_3 = [re.compile(r'((ps)|p|s)'),re.compile(r'(\d)'),re.compile(r'(\d)')]
+# [play state],[transport],[track],[time],[transition]
+# [play state],[transport],[track],[transition]
+# [play state],[transport],[track]
+
+
 def send_data():
 
     global dictionary
@@ -41,33 +50,27 @@ def send_data():
         print_matrix()
 
         user_input = input('User input: ')
-        user_input = user_input.split(',')
-        snoop = (len(user_input))
-        print(snoop)
+        user_input_list = user_input.split(',')
 
-        if len(user_input) < 3:
-            print('invalid input')
+        if validate_input(user_input) is False:
+            break
         else:
-            command = user_input[0]
-            transport = int(user_input[1]) -1
-            track = int(user_input[2]) - 1
-            if len(user_input) == 3:
+            command = user_input_list[0]
+            transport = int(user_input_list[1]) -1
+            track = int(user_input_list[2]) - 1
+            if len(user_input_list) == 3:
                 location = "00:00:00:00"
                 transition = "0"
 
-            elif len(user_input) == 4:
-                location = user_input[4-1]
+            elif len(user_input_list) == 4:
+                location = user_input_list[4-1]
                 location = str(location)
+                transition = "0"
 
-                if verify_time_input(location):
-                    transition = "0"
-                else:
-                    print("invalid time code input")
-                    break  # there should be a better way to do this
-            elif len(user_input) == 5:
-                location = user_input[4 - 1]
-                if verify_time_input(location):
-                    transition = user_input[5-1]
+            elif len(user_input_list) == 5:
+                location = user_input_list[4 - 1]
+                transition = user_input_list[5-1]
+
             if command == 'p':
                 command = 'play'
 
@@ -95,6 +98,44 @@ def send_data():
 
             cls()
             request_number += 1
+
+
+def validate_input(user_input):
+
+    split_list = user_input.split(',')
+
+    if len(split_list) < 3:
+        print("malformed command - not enough arguments given")
+        return false
+
+    elif len(split_list) > 5:
+        print("malformed command - too many arguments given")
+        return false
+
+    elif len(split_list) == 3:
+        state = actual_filter(split_list, grouped_block_3, 3)
+        return state
+
+    elif len(split_list) == 4:
+        state = actual_filter(split_list, grouped_block_2, 4)
+        return state
+
+    elif len(split_list) == 5:
+        state = actual_filter(split_list, grouped_block_1, 5)
+        return state
+
+
+def actual_filter(user_input, block, number):
+
+    error_list = ["Play state", "Transport", "Track", "Time code", "Fade time"]
+
+    for i in range(len(user_input)):
+        if re.match(block[i], user_input[i]) is None:
+            error = error_list[i]
+            print("malformed command at " + error)
+            return False
+
+    return True
 
 
 def print_matrix():
@@ -128,18 +169,6 @@ def print_matrix():
                 padding = padding * " "
                 print(str(i + 1) + ". " + temp_list[u][i] + padding + ' || ', end='')
         print('')
-
-
-def verify_time_input(time_code_input):
-
-    time_code_regex = re.compile(r'[0-9][0-9]:[0-5][0-9]:[0-5][0-9]:[0-5][0-9]')
-    # snoop = time_code_input
-    match = re.match(time_code_regex, time_code_input)
-    if match:
-        return True
-    else:
-        return False
-
 
 def cls():
     os.system('cls' if os.name == 'nt' else 'clear')
