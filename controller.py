@@ -17,10 +17,11 @@ max_length = 0
 main_quit = False
 
 
-grouped_block_1 = [re.compile(r'((ps)|p|s)'),re.compile(r'(\d)'),re.compile(r'(\d)'),
-                   re.compile(r'([0-9][0-9]:[0-5][0-9]:[0-5][0-9]:[0-5][0-9])'),re.compile(r'(\d)')]
-grouped_block_2 = [re.compile(r'((ps)|p|s)'),re.compile(r'(\d)'),re.compile(r'(\d)'),re.compile(r'(\d)')]
-grouped_block_3 = [re.compile(r'((ps)|p|s)'),re.compile(r'(\d)'),re.compile(r'(\d)')]
+grouped_block_1 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)'),
+                   re.compile(r'([0-9][0-9]:[0-5][0-9]:[0-5][0-9]:[0-5][0-9])'), re.compile(r'(\d)')]
+grouped_block_2 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)'), re.compile(r'(\d)')]
+grouped_block_3 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)')]
+
 # [play state],[transport],[track],[time],[transition]
 # [play state],[transport],[track],[transition]
 # [play state],[transport],[track]
@@ -37,14 +38,13 @@ def send_data():
     newline = '\n'
     newline = newline.encode('ascii')
 
-    print("\n the syntax for sending a command to d3 will be based a letter and numbering system")
-    print('to make this script work you will only need to type in a minimum of three things: ')
-    print('[play mode], [transport], [track]')
-    print('additionally you also have 2 extra variables, time and transition.'
-          ' They are automatically set to 0 if left empty')
-    print('there is no need to type out the full names for everything, just the associated numbers')
-    print('as a example, if I want transport 1 to play track 3, I will type out "P,1,3" \n ')
+    print("""Input syntax
+[play state],[transport],[track] - ps,1,1
+[play state],[transport],[track],[transition] - ps,1,1,1
+[play state],[transport],[track],[time],[transition] - ps,1,1,00:00:00:00,1 \n
 
+Available play states - ps - play section, p - play, s - stop \n """)
+          
     while not quit_loop:
 
         print_matrix()
@@ -58,6 +58,7 @@ def send_data():
             command = user_input_list[0]
             transport = int(user_input_list[1]) -1
             track = int(user_input_list[2]) - 1
+            
             if len(user_input_list) == 3:
                 location = "00:00:00:00"
                 transition = "0"
@@ -84,7 +85,7 @@ def send_data():
             track = dictionary[transport][track]
             string = '{"request":%s,"track_command":{"command":"%s","track":"%s","location":"%s","player":"%s","transition":"%s"}}\n' % (
                 request_number, command,  track, location, transport, transition)
-            log = 'request:%s, %s track: %s at location: %s on transport: %s  using transition %s' % (
+            log = 'request %s: %s track: %s at location: %s on transport: %s  using transition %s' % (
                 request_number, command,  track, location, transport, transition)
 
             string = string.encode('ascii')
@@ -106,11 +107,11 @@ def validate_input(user_input):
 
     if len(split_list) < 3:
         print("malformed command - not enough arguments given")
-        return false
+        return False
 
     elif len(split_list) > 5:
         print("malformed command - too many arguments given")
-        return false
+        return False
 
     elif len(split_list) == 3:
         state = actual_filter(split_list, grouped_block_3, 3)
@@ -169,6 +170,7 @@ def print_matrix():
                 padding = padding * " "
                 print(str(i + 1) + ". " + temp_list[u][i] + padding + ' || ', end='')
         print('')
+
 
 def cls():
     os.system('cls' if os.name == 'nt' else 'clear')
