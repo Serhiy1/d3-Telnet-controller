@@ -5,13 +5,9 @@ import re
 
 d3 = telnetlib.Telnet()
 
-status = ''
-request_number = 0
-data = ""
 host = ""
 port = 0
 transport_list = []
-track_list = []
 dictionary = {}
 max_length = 0
 main_quit = False
@@ -179,6 +175,8 @@ def cls():
 def make_new_config():
     global host
     global port
+    global dictionary
+    global transport_list
 
     good_config = False
 
@@ -188,11 +186,12 @@ def make_new_config():
 
         good_config = connect_to_server()
 
-    send_request_command()
-    receive_data()
-    parse_data()
-    get_transports()
-    user_selection()
+    dictionary['host'] = host
+    dictionary['port'] = str(port)
+
+    track_list = get_track_list_from_server()  # done
+    transport_list = get_transports()  # done
+    create_transport_track_relation(track_list, transport_list)  # done
     save_data()
     load_data()
 
@@ -211,67 +210,60 @@ def connect_to_server():
         return False
 
 
-def send_request_command():
+def get_track_list_from_server():
+
+    newline = '\n'
 
     query = ('{"query":{"q":"trackList"}}\n').encode('ascii')
     d3.write(query)
-
-
-def receive_data():
-
-    global data
-
-    newline = '\n'
     newline = newline.encode('ascii')  # all data needs to be converted to ASCII bytes before being sent or received
     data = d3.read_until(newline, 1)
 
+    data = parse_data(data)
 
-def parse_data():
+    return data
+
+
+def parse_data(data):
 
     global request_number
-    global track_list
     global status
-    global data
 
     data = json.loads(data)   # breaks up the Json string into an dict
     request_number = data['request']
     status = data['status']  #
     track_list = data['results']  #
-    results = [(track['track'], track['length']) for track in track_list]
-    track_list = results
+    results = [(track['track']) for track in track_list]
 
-    print(status)
-    print(request_number)
-    for track in results:
-        print(track[0], end=', ')
-    print()
+    return results
 
 
 def get_transports():
 
-    global transport_list
-
     transports = input('write down all the transports with a comma separating each one \n')
     transport_list = transports.split(',')
+    return transport_list
 
 
-def user_selection():
+def create_transport_track_relation(track_list, transport_list):
 
-    global transport_list
-    global track_list
+    global max_length
 
     for i in range(len(transport_list)):
         print(transport_list[i], '\n')
         for n in range(len(track_list)):
-            var = track_list[n]
-            print(str(n + 1) + ' ' + var[0])
+            print(str(n + 1) + ' ' + track_list[n])
 
         selection = input('input the associated track number for your each transport using comma separation \n')
         selection = selection.split(',')
 
+        if len(selection) > max_length:  # Need to gather the maximum length of the list
+            max_length = len(selection)
+
         transfer_list = []
         for o in range(len(selection)):
-            transfer_list.extend(track_list[int(selection[o]) - 1])
+            index = int(selection[o]) - 1  # selection is indexed by 1 and list is 0 indexed
+            transfer_list.append(track_list[index])
 
         form_dictionary(transport_list[i], transfer_list)
 
@@ -280,52 +272,23 @@ def form_dictionary(key, selection):
 
     global dictionary
 
-    for i in range(0, len(selection), 2):
-        track = selection[i]
+    for track in selection:
         dictionary.setdefault(key, []).append(track)
 
 
 def save_data():
 
-    global track_list
-    global host
-    global port
     global dictionary
-    global max_length
+    global transport_list
+
+    serialised_text = json.dumps(dictionary)
+    transport_string = ','.join(transport_list)
 
     file = open('data.txt', 'w')
-
-    file.write(host + '\n')
-    file.write(str(port) + '\n')
-
-    for key in dictionary.keys():
-        list = dictionary[key]
-        if len(dictionary[key]) > max_length:
-            max_length = len(dictionary[key])
-    file.write(str(max_length) + '\n')
-
-    for key in dictionary.keys():
-        file.write(key + ',')
-        temp = dictionary[key]
-
-        for i in range(len(temp)):
-            if i == len(temp)-1:
-                file.write(temp[i])
-            else:
-                file.write(temp[i] + ',')
-
-        if len(temp) < max_length:
-            file.write(',')
-            number = max_length - len(temp)
-            for u in range(number):
-                if u == number-1:
-                    file.write('null')
-                else:
-                    file.write('null,')
-        file.write('\n')
-
-    file.write('EOF')
+    file.write(transport_string + ',\n')
+    file.write(serialised_text)
     file.close()
+
     print("data saved")
 
 
@@ -334,42 +297,30 @@ def load_data():
     global host
     global port
     global dictionary
+    global transport_list
     global max_length
 
-    host = ''
-    port = []
-    dictionary = {}
-    max_length = 0
-    list_of_tracks = []
-
-    escaped = False
-    eof = False
-    i = 0
-
     file = open('data.txt', 'r')
-    host = file.readline()
-    host = host[:-1]
-    port = file.readline()
-    port = port[:-1]
-    port = int(port)
-    max_length = file.readline()
-    max_length = max_length[:-1]
-    max_length = int(max_length)
+    data = file.readline()
+    data = data[:-2]
+    transport_list = data.split(',')  # get transport list
 
-    while not eof:
+    data = file.readline()
+    dictionary = json.loads(data)  # get the rest of the Json data
 
-        read_data = file.readline()
+    host = dictionary["host"]
+    port = dictionary["port"]
 
-        if read_data == 'EOF':
-            eof = True
-        else:
-            read_data = read_data.split(',')
-            key = read_data[0]
-            list_of_tracks = read_data[1:]
-            list_of_tracks[-1] = list_of_tracks[-1][:-1]
+    # Everything below is done to maintain compatibility with PIA code that draws the table
 
-        for v in range(len(list_of_tracks)):
-            dictionary.setdefault(key, []).append(list_of_tracks[v])
+    del dictionary["host"]
+    del dictionary["port"]
+
+    for transport in transport_list:
+        if len(dictionary[transport]) < max_length:
+            padding = max_length - len(dictionary[transport])
+            for i in range(padding):
+                dictionary.setdefault(transport, []).append("null")
 
 
 def main():
@@ -396,9 +347,19 @@ def main():
 
 
 while not main_quit:
-    try:
-        main()
-    except Exception as error:
-        print(type(error))
-        print(error.args)
-        print(error)
+    main()
+
+'''try:
+main()
+except Exception as error:
+print(type(error))
+print(error.args)
+print(error)
+
+'''
+
+
+# TODO : investigate the random variable pass through at the actual filter function
+
+
+

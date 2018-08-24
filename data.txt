@@ -1,14 +1,2 @@
-10.0.27.214
-54321
-<<<<<<< HEAD
-4
-transport 1,track 3,track 1,track 4,track 2
-transport 2,track 3,track 1,track 4,null
-transport 3,track 3,track 1,null,null
-transport 4,track 3,null,null,null
-=======
-3
-default,3,track 1,2
-dsfgn,3,track 1,2
->>>>>>> bb54a9c51c1cf5a93e6d71195e5e59578d45df4a
-EOF
+transport 1,transport 2,transport 3,transport 4,
+{"host": "127.0.0.1", "port": "54321", "transport 1": ["track 3", "track 1", "track 4", "track 2"], "transport 2": ["track 3", "track 1", "track 4"], "transport 3": ["track 3", "track 1"], "transport 4": ["track 3"]}
