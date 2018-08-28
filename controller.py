@@ -4,9 +4,9 @@ import os
 import re
 
 d3 = telnetlib.Telnet()
-dictionary = {}
 main_quit = False
 
+dictionary = {}
 grouped_block_1 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)'),
                    re.compile(r'([0-9][0-9]:[0-5][0-9]:[0-5][0-9]:[0-5][0-9])'), re.compile(r'(\d)')]
 grouped_block_2 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)'), re.compile(r'(\d)')]
@@ -21,7 +21,7 @@ def send_data():
 
     global dictionary
     request_number = 0
-    status = False
+    status = ""
 
     quit_loop = False
     key_list = list(dictionary.keys())
@@ -46,8 +46,10 @@ Available play states - ps - play section, p - play, s - stop \n """)
         user_input = input('User input: ')
         user_input_list = user_input.split(',')
 
-        if validate_input(user_input) is False:
+        if format_validation(user_input) is False:
             print("invalid input")
+            input("enter to continue\n")
+            cls()
         else:
             command = user_input_list[0]
             transport = int(user_input_list[1]) -1
@@ -95,7 +97,7 @@ Available play states - ps - play section, p - play, s - stop \n """)
             request_number += 1
 
 
-def validate_input(user_input):
+def format_validation(user_input):
 
     split_list = user_input.split(',')
 
@@ -109,14 +111,20 @@ def validate_input(user_input):
 
     elif len(split_list) == 3:
         state = actual_filter(split_list, grouped_block_3, 3)
+        if state:
+            state = input_validation(split_list)
         return state
 
     elif len(split_list) == 4:
         state = actual_filter(split_list, grouped_block_2, 4)
+        if state:
+            state = input_validation(split_list)
         return state
 
     elif len(split_list) == 5:
         state = actual_filter(split_list, grouped_block_1, 5)
+        if state:
+            state = input_validation(split_list)
         return state
 
 
@@ -129,6 +137,26 @@ def actual_filter(user_input, block, number):
             error = error_list[i]
             print("malformed command at " + error)
             return False
+
+    return True
+
+
+def input_validation(user_input):
+
+    global dictionary
+    transport_list = list(dictionary.keys())
+    transport_list.remove("host")
+    transport_list.remove("port")
+    transport_list.remove("max length")
+
+    # The "-1" is used to change the 1 index to 0 index
+
+    if (int(user_input[1])) > len(transport_list):
+        print("transport not in list")
+        return False
+    if (int(user_input[2])) > len(dictionary[transport_list[int(user_input[1]) - 1]]): # using the dictionary to get the tracklist using the user input
+        print("track not in list")
+        return False
 
     return True
 
@@ -168,6 +196,7 @@ def print_matrix():
                 print(str(i + 1) + ". " + temp_list[u][i] + padding + ' || ', end='')
         print('')
 
+    print("\n")
 
 def cls():
     os.system('cls' if os.name == 'nt' else 'clear')
