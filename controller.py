@@ -4,14 +4,8 @@ import os
 import re
 
 d3 = telnetlib.Telnet()
-
-host = ""
-port = 0
-transport_list = []
 dictionary = {}
-max_length = 0
 main_quit = False
-
 
 grouped_block_1 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)'),
                    re.compile(r'([0-9][0-9]:[0-5][0-9]:[0-5][0-9]:[0-5][0-9])'), re.compile(r'(\d)')]
@@ -26,11 +20,15 @@ grouped_block_3 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'
 def send_data():
 
     global dictionary
-    global request_number
-    global status
+    request_number = 0
+    status = False
 
     quit_loop = False
     key_list = list(dictionary.keys())
+    key_list.remove("host")
+    key_list.remove("port")
+    key_list.remove("max length")
+
     newline = '\n'
     newline = newline.encode('ascii')
 
@@ -49,7 +47,7 @@ Available play states - ps - play section, p - play, s - stop \n """)
         user_input_list = user_input.split(',')
 
         if validate_input(user_input) is False:
-            break
+            print("invalid input")
         else:
             command = user_input_list[0]
             transport = int(user_input_list[1]) -1
@@ -138,22 +136,25 @@ def actual_filter(user_input, block, number):
 def print_matrix():
 
     global dictionary
-    global max_length
 
-    key_list = list(dictionary.keys())
+    max_length = dictionary["max length"]
+    transport_list = list(dictionary.keys())
+    transport_list.remove("host")
+    transport_list.remove("port")
+    transport_list.remove("max length")
 
-    for key in range(len(key_list)):
-        padding = len(key_list[key])
+    for key in range(len(transport_list)):
+        padding = len(transport_list[key])
         padding = 25 - padding
         padding = padding * " "
-        print(str(key + 1) + ". " + key_list[key] + padding + ' || ', end='')
+        print(str(key + 1) + ". " + transport_list[key] + padding + ' || ', end='')
 
     temp_list = []
-    for key in key_list:
+    for key in transport_list:
         temp_list.append(dictionary[key])
 
     print('')
-    print(('-' * 28 + ' || ') * len(key_list))
+    print(('-' * 28 + ' || ') * len(transport_list))
 
     for i in range(max_length):
         for u in range(len(temp_list)):
@@ -173,33 +174,26 @@ def cls():
 
 
 def make_new_config():
-    global host
-    global port
     global dictionary
-    global transport_list
-
     good_config = False
 
     while not good_config:
         host = input('whats the IP address of the machine you are trying to connect to? \n')
         port = input("what port is d3 running on? \n")
 
-        good_config = connect_to_server()
+        good_config = connect_to_server(host, port)
 
     dictionary['host'] = host
     dictionary['port'] = str(port)
 
     track_list = get_track_list_from_server()  # done
     transport_list = get_transports()  # done
-    create_transport_track_relation(track_list, transport_list)  # done
+    create_transport_track_dict(track_list, transport_list)  # done
     save_data()
     load_data()
 
 
-def connect_to_server():
-
-    global host
-    global port
+def connect_to_server(host,port):
 
     try:
         d3.open(host, port, 3)
@@ -245,9 +239,10 @@ def get_transports():
     return transport_list
 
 
-def create_transport_track_relation(track_list, transport_list):
+def create_transport_track_dict(track_list, transport_list):
 
-    global max_length
+    global dictionary
+    max_length = 0
 
     for i in range(len(transport_list)):
         print(transport_list[i], '\n')
@@ -267,6 +262,8 @@ def create_transport_track_relation(track_list, transport_list):
 
         form_dictionary(transport_list[i], transfer_list)
 
+    dictionary["max length"] = max_length
+
 
 def form_dictionary(key, selection):
 
@@ -279,13 +276,10 @@ def form_dictionary(key, selection):
 def save_data():
 
     global dictionary
-    global transport_list
 
     serialised_text = json.dumps(dictionary)
-    transport_string = ','.join(transport_list)
 
     file = open('data.txt', 'w')
-    file.write(transport_string + ',\n')
     file.write(serialised_text)
     file.close()
 
@@ -294,30 +288,23 @@ def save_data():
 
 def load_data():
 
-    global host
-    global port
     global dictionary
-    global transport_list
-    global max_length
 
     file = open('data.txt', 'r')
     data = file.readline()
-    data = data[:-2]
-    transport_list = data.split(',')  # get transport list
+    dictionary = json.loads(data)
+    transport_list = list(dictionary.keys())  # Get the list of transports, removing the host, port and max length
 
-    data = file.readline()
-    dictionary = json.loads(data)  # get the rest of the Json data
+    max_length = dictionary["max length"]
 
-    host = dictionary["host"]
-    port = dictionary["port"]
+    transport_list.remove("host")
+    transport_list.remove("port")
+    transport_list.remove("max length")
 
     # Everything below is done to maintain compatibility with PIA code that draws the table
 
-    del dictionary["host"]
-    del dictionary["port"]
-
     for transport in transport_list:
-        if len(dictionary[transport]) < max_length:
+        if max_length > len(dictionary[transport]):
             padding = max_length - len(dictionary[transport])
             for i in range(padding):
                 dictionary.setdefault(transport, []).append("null")
@@ -325,15 +312,15 @@ def load_data():
 
 def main():
 
-    selection = ""
+    global dictionary
+
     selection = input('would you like to load a previous config? y/n \n')
     selection = selection.lower()
-    temp = False
 
     if selection == 'y':
         try:
             load_data()
-            temp = connect_to_server()
+            temp = connect_to_server(dictionary["host"], dictionary["port"])
             if temp == False:
                 make_new_config()
 
@@ -359,7 +346,8 @@ print(error)
 '''
 
 
-# TODO : investigate the random variable pass through at the actual filter function
+# TODO : Investigate the random variable pass through at the actual filter function
+
 
 
 

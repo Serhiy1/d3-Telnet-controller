@@ -1,2 +1,1 @@
-transport 1,transport 2,transport 3,transport 4,
-{"host": "127.0.0.1", "port": "54321", "transport 1": ["track 3", "track 1", "track 4", "track 2"], "transport 2": ["track 3", "track 1", "track 4"], "transport 3": ["track 3", "track 1"], "transport 4": ["track 3"]}
+{"host": "127.0.0.1", "port": "54321", "transport 1": ["track 1", "track 2", "track 3", "track 4"], "transport 2": ["track 1", "track 2", "track 3", "track 4"], "transport 3": ["track 1", "track 2", "track 3", "track 4"], "transport 4": ["track 1", "track 2", "track 3", "track 4"], "max length": 4}
