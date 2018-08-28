@@ -79,8 +79,10 @@ Available play states - ps - play section, p - play, s - stop \n """)
 
             transport = key_list[transport]
             track = dictionary[transport][track]
-            string = '{"request":%s,"track_command":{"command":"%s","track":"%s","location":"%s","player":"%s","transition":"%s"}}\n' % (
-                request_number, command,  track, location, transport, transition)
+            string = '{"request":%s,"track_command":{"command":"%s",' \
+                     '"track":"%s","location":"%s","player":"%s","transition":"%s"}}\n' % (
+                        request_number, command,  track, location, transport, transition)
+
             log = 'request %s: %s track: %s at location: %s on transport: %s  using transition %s' % (
                 request_number, command,  track, location, transport, transition)
 
@@ -222,7 +224,7 @@ def make_new_config():
     load_data()
 
 
-def connect_to_server(host,port):
+def connect_to_server(host, port):
 
     try:
         d3.open(host, port, 3)
@@ -248,9 +250,6 @@ def get_track_list_from_server():
 
 
 def parse_data(data):
-
-    global request_number
-    global status
 
     data = json.loads(data)   # breaks up the Json string into an dict
     request_number = data['request']
@@ -318,7 +317,6 @@ def save_data():
 def load_data():
 
     global dictionary
-
     file = open('data.txt', 'r')
     data = file.readline()
     dictionary = json.loads(data)
@@ -342,7 +340,6 @@ def load_data():
 def main():
 
     global dictionary
-
     selection = input('would you like to load a previous config? y/n \n')
     selection = selection.lower()
 
@@ -365,14 +362,14 @@ def main():
 while not main_quit:
     main()
 
-'''try:
-main()
+try:
+    main()
 except Exception as error:
-print(type(error))
-print(error.args)
-print(error)
+    print(type(error))
+    print(error.args)
+    print(error)
 
-'''
+
 
 
 # TODO : Investigate the random variable pass through at the actual filter function
