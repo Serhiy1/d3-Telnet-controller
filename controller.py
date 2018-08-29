@@ -17,86 +17,95 @@ grouped_block_3 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'
 # [play state],[transport],[track]
 
 
-def send_data():
+def user_input():
+
+    quit_loop = False
+
+    while not quit_loop:
+        print("""Input syntax shown below 
+        [play state],[transport],[track] - ps,1,1
+        [play state],[transport],[track],[transition] - ps,1,1,1
+        [play state],[transport],[track],[time],[transition] - ps,1,1,00:00:00:00,1    
+        If you want to put multiple commands use the '/' key to split separate commands
+    
+        Available play states - ps - play section, p - play, s - stop \n """)
+
+        print_matrix()
+
+        command = input('User input: ')
+        if "/" in command:
+            command_list = command.split('/')
+            for command in command_list:
+                send_data(command)
+        else:
+            send_data(command)
+
+        input("press enter to continue")
+        cls()
+
+
+def send_data(user_command):
 
     global dictionary
     request_number = 0
     status = ""
 
-    quit_loop = False
-    key_list = list(dictionary.keys())
-    key_list.remove("host")
-    key_list.remove("port")
-    key_list.remove("max length")
+    transport_list = dictionary["transport list"]
 
     newline = '\n'
     newline = newline.encode('ascii')
+    commands = user_command.split(',')
 
-    print("""Input syntax
-[play state],[transport],[track] - ps,1,1
-[play state],[transport],[track],[transition] - ps,1,1,1
-[play state],[transport],[track],[time],[transition] - ps,1,1,00:00:00:00,1 \n
+    if format_validation(user_command) is False:
+        print("invalid input")
+        input("enter to continue\n")
+        cls()
+    else:
+        command = commands[0]
+        transport = int(commands[1]) -1
+        track = int(commands[2]) - 1
 
-Available play states - ps - play section, p - play, s - stop \n """)
-          
-    while not quit_loop:
+        if len(commands) == 3:
+            location = "00:00:00:00"
+            transition = "0"
 
-        print_matrix()
+        elif len(commands) == 4:
+            location = commands[4-1]
+            location = str(location)
+            transition = "0"
 
-        user_input = input('User input: ')
-        user_input_list = user_input.split(',')
+        elif len(commands) == 5:
+            location = commands[4 - 1]
+            transition = commands[5-1]
 
-        if format_validation(user_input) is False:
-            print("invalid input")
-            input("enter to continue\n")
-            cls()
-        else:
-            command = user_input_list[0]
-            transport = int(user_input_list[1]) -1
-            track = int(user_input_list[2]) - 1
-            
-            if len(user_input_list) == 3:
-                location = "00:00:00:00"
-                transition = "0"
+        if command == 'p':
+            command = 'play'
 
-            elif len(user_input_list) == 4:
-                location = user_input_list[4-1]
-                location = str(location)
-                transition = "0"
+        elif command == 'ps':
+            command = 'playSection'
 
-            elif len(user_input_list) == 5:
-                location = user_input_list[4 - 1]
-                transition = user_input_list[5-1]
+        elif command == 's':
+            command = 'stop'
 
-            if command == 'p':
-                command = 'play'
+        transport = transport_list[transport]
+        track = dictionary[transport][track]
+        string = '{"request":%s,"track_command":{"command":"%s",' \
+                 '"track":"%s","location":"%s","player":"%s","transition":"%s"}}\n' % (
+                    request_number, command,  track, location, transport, transition)
 
-            elif command == 'ps':
-                command = 'playSection'
+        log = 'request %s: %s track: %s at location: %s on transport: %s  using transition %s' % (
+            request_number, command,  track, location, transport, transition)
 
-            elif command == 's':
-                command = 'stop'
+        string = string.encode('ascii')
+        d3.write(string)
+        status = d3.read_until(newline, 1)
+        status = status.decode('ascii')
+        status = json.loads(status)
 
-            transport = key_list[transport]
-            track = dictionary[transport][track]
-            string = '{"request":%s,"track_command":{"command":"%s",' \
-                     '"track":"%s","location":"%s","player":"%s","transition":"%s"}}\n' % (
-                        request_number, command,  track, location, transport, transition)
+        print(log)
+        print(status['status'])
 
-            log = 'request %s: %s track: %s at location: %s on transport: %s  using transition %s' % (
-                request_number, command,  track, location, transport, transition)
-
-            string = string.encode('ascii')
-            d3.write(string)
-            status = d3.read_until(newline, 1)
-            status = status.decode('ascii')
-            status = json.loads(status)
-
-            print(log)
-            input(status['status'])
-
-            cls()
-            request_number += 1
+        request_number += 1
 
 
 def format_validation(user_input):
@@ -112,25 +121,25 @@ def format_validation(user_input):
         return False
 
     elif len(split_list) == 3:
-        state = actual_filter(split_list, grouped_block_3, 3)
+        state = actual_filter(split_list, grouped_block_3)
         if state:
             state = input_validation(split_list)
         return state
 
     elif len(split_list) == 4:
-        state = actual_filter(split_list, grouped_block_2, 4)
+        state = actual_filter(split_list, grouped_block_2)
         if state:
             state = input_validation(split_list)
         return state
 
     elif len(split_list) == 5:
-        state = actual_filter(split_list, grouped_block_1, 5)
+        state = actual_filter(split_list, grouped_block_1)
         if state:
             state = input_validation(split_list)
         return state
 
 
-def actual_filter(user_input, block, number):
+def actual_filter(user_input, block):
 
     error_list = ["Play state", "Transport", "Track", "Time code", "Fade time"]
 
@@ -146,10 +155,7 @@ def actual_filter(user_input, block, number):
 def input_validation(user_input):
 
     global dictionary
-    transport_list = list(dictionary.keys())
-    transport_list.remove("host")
-    transport_list.remove("port")
-    transport_list.remove("max length")
+    transport_list = list(dictionary["transport list"])
 
     # The "-1" is used to change the 1 index to 0 index
 
@@ -168,10 +174,7 @@ def print_matrix():
     global dictionary
 
     max_length = dictionary["max length"]
-    transport_list = list(dictionary.keys())
-    transport_list.remove("host")
-    transport_list.remove("port")
-    transport_list.remove("max length")
+    transport_list = dictionary["transport list"]
 
     for key in range(len(transport_list)):
         padding = len(transport_list[key])
@@ -217,9 +220,12 @@ def make_new_config():
     dictionary['host'] = host
     dictionary['port'] = str(port)
 
-    track_list = get_track_list_from_server()  # done
-    transport_list = get_transports()  # done
-    create_transport_track_dict(track_list, transport_list)  # done
+    track_list = get_track_list_from_server()
+    transport_list = get_transports()
+
+    dictionary["transport list"] = transport_list
+
+    create_transport_track_dict(track_list, transport_list)
     save_data()
     load_data()
 
@@ -306,11 +312,9 @@ def save_data():
     global dictionary
 
     serialised_text = json.dumps(dictionary)
-
     file = open('data.txt', 'w')
     file.write(serialised_text)
     file.close()
-
     print("data saved")
 
 
@@ -319,14 +323,11 @@ def load_data():
     global dictionary
     file = open('data.txt', 'r')
     data = file.readline()
+    file.close()
     dictionary = json.loads(data)
-    transport_list = list(dictionary.keys())  # Get the list of transports, removing the host, port and max length
+    transport_list = list(dictionary["transport list"])
 
     max_length = dictionary["max length"]
-
-    transport_list.remove("host")
-    transport_list.remove("port")
-    transport_list.remove("max length")
 
     # Everything below is done to maintain compatibility with PIA code that draws the table
 
@@ -356,7 +357,7 @@ def main():
     else:
         make_new_config()
 
-    send_data()
+    user_input()
 
 
 while not main_quit:
