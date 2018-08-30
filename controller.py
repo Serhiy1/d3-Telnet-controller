@@ -26,8 +26,8 @@ def user_input():
         [play state],[transport],[track] - ps,1,1
         [play state],[transport],[track],[transition] - ps,1,1,1
         [play state],[transport],[track],[time],[transition] - ps,1,1,00:00:00:00,1    
-        If you want to put multiple commands use the '/' key to split separate commands
-    
+        If you want to put multiple commands simultaneously use the '/' key to split them
+            
         Available play states - ps - play section, p - play, s - stop \n """)
 
         print_matrix()
@@ -48,8 +48,6 @@ def send_data(user_command):
 
     global dictionary
     request_number = 0
-    status = ""
-
     transport_list = dictionary["transport list"]
 
     newline = '\n'
@@ -236,7 +234,7 @@ def connect_to_server(host, port):
         d3.open(host, port, 3)
         print('connection successful \n')
         return True
-    except:
+    except Exception as error:
         print("cannot connect to server \n")
         return False
 
@@ -326,7 +324,6 @@ def load_data():
     file.close()
     dictionary = json.loads(data)
     transport_list = list(dictionary["transport list"])
-
     max_length = dictionary["max length"]
 
     # Everything below is done to maintain compatibility with PIA code that draws the table
@@ -369,12 +366,3 @@ except Exception as error:
     print(type(error))
     print(error.args)
     print(error)
-
-
-
-
-# TODO : Investigate the random variable pass through at the actual filter function
-
-
-
-
