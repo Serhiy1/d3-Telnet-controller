@@ -1,23 +1,125 @@
-import telnetlib
-import json
-import os
-import re
+import telnetlib, json, os, re, time
+from timecode import Timecode
 
 d3 = telnetlib.Telnet()
-main_quit = False
-
 dictionary = {}
+
 grouped_block_1 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)'),
                    re.compile(r'([0-9][0-9]:[0-5][0-9]:[0-5][0-9]:[0-5][0-9])'), re.compile(r'(\d)')]
 grouped_block_2 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)'), re.compile(r'(\d)')]
 grouped_block_3 = [re.compile(r'((ps)|p|s)'), re.compile(r'(\d)'), re.compile(r'(\d)')]
 
+# List of regex list to verify input commands from the users
 # [play state],[transport],[track],[time],[transition]
 # [play state],[transport],[track],[transition]
 # [play state],[transport],[track]
 
 
-def user_input():
+def create_new_command_file():
+
+    cls()
+    print("command list file does not exist")
+
+    file = open("command list.txt", "w")
+    file.write("The command list is formatted using a command - time code pair"
+               "as an example: p,1,1/ 00:00:17:08 would be a valid command"
+               "subsequent commands are placed onto a newline "
+               "delete this paragraph after populating the file with the necessary commands")
+    file.close()
+    print("created command list.txt in the working directory of the the python script"
+          "please read the instructions inside the file"
+          "this script will now close")
+    input()
+    quit()
+
+
+def run_timecode_command_list():
+
+    frame_rate = "30"  # default frame rate
+
+    command_increment = 0
+    frame_count = 0
+    marker = time.time()
+
+    clock = Timecode(frame_rate)
+    command_list = load_command_list()
+
+    if command_list[0] == "null":
+        create_new_command_file()
+    else:
+
+        while True:
+
+            delta = time.time() - marker  # time delta returned in microseconds
+
+            if delta >= 1/int(frame_rate):  # Converts microseconds into frames, due to variance cannot be a exact comparison
+                # code below should take less than a frame to process to keep the clock accurate
+
+                frame_count += 1  # Total frame count
+                tc_list = clock.frames_to_tc(frame_count)
+                tc = clock.tc_to_string(tc_list[0], tc_list[1], tc_list[2], tc_list[3])
+                marker = time.time()
+                print(tc, end="\r")
+
+                if command_list[command_increment] == "end":
+                    print("finished command list")
+                    input("closing program")
+                    quit()
+                else:
+                    comp_1 = clock.tc_to_frames(tc)
+                    comp_2 = clock.tc_to_frames(command_list[command_increment][1])
+
+                    if comp_1 >= comp_2:
+                        print("                  ", end="\r")
+                        print(command_list[command_increment][1], " - ", command_list[command_increment][0])
+                        send_data(command_list[command_increment][0])
+                        command_increment += 1
+
+    print("Finished playing through the command list")
+
+
+def load_command_list():
+
+    end = False
+    command_list = []
+
+    try:
+        command_file = open("command list.txt", "r")
+    except IOError:
+        command_list.append("null")
+        return command_list
+
+    while not end:
+
+        temp_string = command_file.readline()
+
+        if temp_string == "end":
+            command_list.append("end")  # marking end of file
+            return command_list
+
+        else:
+            temp_string = temp_string[:-1]
+            temp_list = temp_string.split("/")
+            temp_tuple = tuple(temp_list)
+            command_list.append(temp_tuple)
+
+
+def playback_or_live():
+
+    valid_input = False
+
+    while not valid_input:
+        choice = input("Do you want to run a series of commands from a save file(y) or run custom commands(n)?\n")
+        if choice.lower() == "y":
+            run_timecode_command_list()
+        if choice.lower() == "n":
+            live_commands()
+        else:
+            print("Invalid input")
+            cls()
+
+
+def live_commands():
 
     quit_loop = False
 
@@ -201,6 +303,7 @@ def print_matrix():
 
     print("\n")
 
+
 def cls():
     os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -319,12 +422,23 @@ def save_data():
 def load_data():
 
     global dictionary
-    file = open('data.txt', 'r')
+    try:
+        file = open('data.txt', 'r')
+    except IOError:
+        print('file does not exist, making new config \n')
+        make_new_config()
+
     data = file.readline()
     file.close()
     dictionary = json.loads(data)
-    transport_list = list(dictionary["transport list"])
-    max_length = dictionary["max length"]
+
+    if not connect_to_server(dictionary["host"], dictionary["port"]):
+        print("failed to connect to server"
+              "Creating a new configuration")
+        make_new_config()
+    else:
+        transport_list = list(dictionary["transport list"])
+        max_length = dictionary["max length"]
 
     # Everything below is done to maintain compatibility with PIA code that draws the table
 
@@ -337,32 +451,34 @@ def load_data():
 
 def main():
 
-    global dictionary
-    selection = input('would you like to load a previous config? y/n \n')
-    selection = selection.lower()
+    while not valid:
 
-    if selection == 'y':
-        try:
+        selection = input('would you like to load a previous config? y/n or q for quit \n')
+        selection = selection.lower()
+
+        if selection.lower() == 'y':
             load_data()
-            temp = connect_to_server(dictionary["host"], dictionary["port"])
-            if temp == False:
-                make_new_config()
+            valid = True
 
-        except IOError:
-            print('could not load data, making new config \n')
+        elif selection.lower() == "n":
             make_new_config()
-    else:
-        make_new_config()
+            valid = True
 
-    user_input()
+        elif selection.lower() == "q":
+            quit()
+
+        else:
+            input("invalid input, enter to continue")
+            cls()
+
+    playback_or_live()
 
 
-while not main_quit:
-    main()
+main()
 
-try:
+'''try:
     main()
 except Exception as error:
     print(type(error))
     print(error.args)
-    print(error)
+    print(error) '''
