@@ -93,7 +93,7 @@ def load_command_list():
 
         temp_string = command_file.readline()
 
-        if temp_string == "end":
+        if temp_string == "end\n":
             command_list.append("end")  # marking end of file
             return command_list
 
@@ -451,6 +451,8 @@ def load_data():
 
 def main():
 
+    valid = False
+
     while not valid:
 
         selection = input('would you like to load a previous config? y/n or q for quit \n')
@@ -474,11 +476,9 @@ def main():
     playback_or_live()
 
 
-main()
-
-'''try:
+try:
     main()
 except Exception as error:
     print(type(error))
     print(error.args)
-    print(error) '''
+    print(error)
