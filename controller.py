@@ -482,3 +482,14 @@ except Exception as error:
     print(type(error))
     print(error.args)
     print(error)
+
+
+class D3TelnetSession:
+
+    def __init__(self, host, port):
+
+        self.connection = telnetlib.Telnet(host, port)
+        self.transport_list = []
+        self.track_list = []
+
+
