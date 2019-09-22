@@ -11,6 +11,7 @@ class D3TelnetSession:
         self.port = port
         self.timeout = 3
         self.transport_control = telnetlib.Telnet()
+        self.start_connection()
 
         # setup internal variables
 
